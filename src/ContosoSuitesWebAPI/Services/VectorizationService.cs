@@ -28,10 +28,10 @@ namespace ContosoSuitesWebAPI.Services
             {
                 // Generate a vector for the provided text.
                 //var embeddings = await embeddingClient.GenerateEmbeddingAsync(text);
-                #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
                 // Generate a vector for the provided text.
                 var embeddings = await _kernel.GetRequiredService<ITextEmbeddingGenerationService>().GenerateEmbeddingAsync(text);
-                #pragma warning restore SKEXP0001
+#pragma warning restore SKEXP0001
 
                 //var vector = embeddings.Value.Vector.ToArray();
                 var vector = embeddings.ToArray();

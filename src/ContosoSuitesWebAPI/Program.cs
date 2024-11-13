@@ -40,25 +40,34 @@ builder.Services.AddSingleton<CosmosClient>((_) =>
 });
 
  builder.Services.AddSingleton<Kernel>((_) =>
- {
-     IKernelBuilder kernelBuilder = Kernel.CreateBuilder();
-     
-     #pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-     kernelBuilder.AddAzureOpenAITextEmbeddingGeneration(
+{
+    IKernelBuilder kernelBuilder = Kernel.CreateBuilder();
+    kernelBuilder.AddAzureOpenAIChatCompletion(
+        deploymentName: builder.Configuration["AzureOpenAI:DeploymentName"]!,
+        endpoint: builder.Configuration["AzureOpenAI:Endpoint"]!,
+        apiKey: builder.Configuration["AzureOpenAI:ApiKey"]!
+    );
+#pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppressthis diagnostic to proceed.
+    kernelBuilder.AddAzureOpenAITextEmbeddingGeneration(
         deploymentName: builder.Configuration["AzureOpenAI:EmbeddingDeploymentName"]!,
         endpoint: builder.Configuration["AzureOpenAI:Endpoint"]!,
         apiKey: builder.Configuration["AzureOpenAI:ApiKey"]!
+    );
+#pragma warning restore SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppressthis diagnostic to proceed.
+      
+    kernelBuilder.Plugins.AddFromType<DatabaseService>();
+    kernelBuilder.Plugins.AddFromType<MaintenanceRequestPlugin>("MaintenanceCopilot");
+      
+    kernelBuilder.Services.AddSingleton<CosmosClient>((_) =>
+    {
+        CosmosClient client = new(
+            connectionString: builder.Configuration["CosmosDB:ConnectionString"]!
         );
-    #pragma warning restore SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-
-    //  kernelBuilder.AddAzureOpenAIChatCompletion(
-    //      deploymentName: builder.Configuration["AzureOpenAI:DeploymentName"]!,
-    //      endpoint: builder.Configuration["AzureOpenAI:Endpoint"]!,
-    //      apiKey: builder.Configuration["AzureOpenAI:ApiKey"]!
-    //  );
-     kernelBuilder.Plugins.AddFromType<DatabaseService>();
-     return kernelBuilder.Build();
- });
+        return client;
+    });
+      
+    return kernelBuilder.Build();
+});
 
 // Create a single instance of the AzureOpenAIClient to be shared across the application.
 // builder.Services.AddSingleton<AzureOpenAIClient>((_) =>
@@ -156,7 +165,8 @@ app.MapPost("/VectorSearch", async ([FromBody] float[] queryVector, [FromService
 app.MapPost("/MaintenanceCopilotChat", async ([FromBody]string message, [FromServices] MaintenanceCopilot copilot) =>
 {
     // Exercise 5 Task 2 TODO #10: Insert code to call the Chat function on the MaintenanceCopilot. Don't forget to remove the NotImplementedException.
-    throw new NotImplementedException();
+    var response = await copilot.Chat(message);
+    return response;
 })
     .WithName("Copilot")
     .WithOpenApi();
